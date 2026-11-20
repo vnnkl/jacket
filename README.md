@@ -1,5 +1,7 @@
 # jacket
 
+An LED jacket (Hello Fairy Bluetooth controller) that plays a light show for every Lightning payment.
+
 ## Quick start: flash an ESP32
 
 You need a Mac or Linux computer, an ESP32, ESP32-S3 or ESP32-C3 board (not S2), and a USB data cable.
@@ -25,9 +27,10 @@ cd jacket
 Close the Hello Fairy app on all phones: the jacket accepts only one Bluetooth connection.
 If the board isn't found, try another USB cable or hold BOOT while plugging it in.
 
+## Mac command line (optional)
 
-Control the Hello Fairy LED jacket (controller `RSL100`, firmware 1.1.0) over Bluetooth from a Mac,
-and make it play a disco rainbow every time a payment arrives.
+Control the jacket (controller `RSL100`, firmware 1.1.0) over Bluetooth from a Mac, and play the
+payment shows from the Mac instead of an ESP32.
 
 Close the Hello Fairy app first: the controller accepts only one Bluetooth connection.
 
