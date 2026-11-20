@@ -1,12 +1,14 @@
 #!/usr/bin/env bash
-# Flash the jacket payment-light firmware onto an ESP32.
-# Asks for Wi-Fi name/password and the payment websocket URL, detects the board, builds, uploads.
-# Non-interactive: set WIFI_SSID, WIFI_PASSWORD, JACKET_PAYMENT_WS (and optionally JACKET_BLE_ADDRESS, ESP_PORT).
+# Build and flash the jacket payment-light firmware. Settings are entered later on the admin page.
+#   ./flash.sh                     USB: detect the board, build, flash, open the serial log
+#   ./flash.sh --build-only [env]  build firmware.bin for uploading on the admin page (default env: esp32)
+#   ./flash.sh --ota [host] [env]  build and upload over Wi-Fi (default host: jacket.local)
+# Optional: ESP_PORT=/dev/cu.xxx, JACKET_ADMIN_PASSWORD for --ota without a prompt.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 FW="$ROOT/esp32"
-SECRETS="$FW/include/secrets.h"
+BIN_OUT="$ROOT/firmware.bin"
 PIO=(uvx --from platformio pio)
 ESPTOOL=(uvx --from esptool esptool)
 
@@ -41,45 +43,56 @@ $out"
   esac
 }
 
-c_string() {  # escape for a C string literal
-  local s="${1//\\/\\\\}"; s="${s//\"/\\\"}"; printf '"%s"' "$s"
+build() {
+  "${PIO[@]}" run -d "$FW" -e "$1" >&2
+  cp "$FW/.pio/build/$1/firmware.bin" "$BIN_OUT"
+  echo "Built $BIN_OUT" >&2
 }
 
-ask_secrets() {
-  local ssid="${WIFI_SSID:-}" pass="${WIFI_PASSWORD:-}" url="${JACKET_PAYMENT_WS:-}" addr="${JACKET_BLE_ADDRESS:-}"
-  [[ -z "$ssid" ]] && read -rp "Wi-Fi name (2.4 GHz network): " ssid
-  [[ -z "$pass" ]] && { read -rsp "Wi-Fi password: " pass; echo; }
-  [[ -z "$url" ]] && read -rp "Payment websocket URL (wss://...): " url
-  [[ -n "$ssid" ]] || die "Wi-Fi name is required."
-  [[ "$url" =~ ^wss?://[^/]+ ]] || die "Websocket URL must start with ws:// or wss://"
-  [[ -z "$addr" || "$addr" =~ ^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$ ]] || die "JACKET_BLE_ADDRESS must look like aa:bb:cc:dd:ee:ff"
-  (
-    umask 077
-    {
-      echo "// Written by flash.sh - contains your Wi-Fi password. Git-ignored; do not commit."
-      echo "#pragma once"
-      echo "#define WIFI_SSID $(c_string "$ssid")"
-      echo "#define WIFI_PASSWORD $(c_string "$pass")"
-      echo "#define PAYMENT_WS_URL $(c_string "$url")"
-      echo "#define JACKET_ADDRESS $(c_string "$addr")"
-    } > "$SECRETS"
-  )
+build_only() {
+  local env="${1:-esp32}"
+  build "$env"
+  echo "Upload it on the admin page under Firmware."
 }
 
-main() {
+ota() {
+  local host="${1:-jacket.local}" env="${2:-esp32}" pass="${JACKET_ADMIN_PASSWORD:-}"
+  build "$env"
+  [[ -z "$pass" ]] && { read -rsp "Admin password for $host: " pass; echo; }
+  echo "Uploading to http://$host/update ..."
+  local out code
+  out="$(curl -sS --max-time 180 -w '\n%{http_code}' -u "admin:$pass" -F "firmware=@$BIN_OUT" "http://$host/update")" \
+    || die "Could not reach $host. Is the jacket controller on and on the same Wi-Fi?"
+  code="${out##*$'\n'}"
+  [[ "$code" == 200 ]] || die "Upload failed (HTTP $code): ${out%$'\n'*}"
+  echo "Uploaded. The controller restarts with the new firmware in a few seconds."
+}
+
+usb() {
   local port env
   port="$(find_port)"
   echo "Board port: $port"
   env="$(detect_env "$port")"
   echo "Board type: $env"
-  ask_secrets
-  echo "Building and flashing (first run downloads the ESP32 toolchain, ~5 min)..."
+  echo "Building and flashing (first run downloads the ESP32 toolchain, ~10 min)..."
   "${PIO[@]}" run -d "$FW" -e "$env" -t upload --upload-port "$port"
   echo
-  echo "Flashed. Close the Hello Fairy app and stop the Mac listener (tmux kill-session -t jacket):"
-  echo "the jacket accepts only one Bluetooth connection."
-  read -rp "Open the serial monitor now? [Y/n] " yn
+  echo "Flashed. Settings you saved before are kept. On a fresh board:"
+  echo "  1. Join the Wi-Fi 'Jacket-Setup' (password: jacketsetup) with your phone."
+  echo "  2. The setup page opens (or go to http://192.168.4.1). Set the admin password, Wi-Fi and websocket URL."
+  echo "Stop the Mac listener first (tmux kill-session -t jacket): the jacket accepts one Bluetooth connection."
+  read -rp "Open the serial log now? [Y/n] " yn
   [[ "${yn:-Y}" =~ ^[Nn] ]] || "${PIO[@]}" device monitor -d "$FW" -e "$env" -p "$port"
+}
+
+main() {
+  case "${1:-}" in
+    --build-only) shift; build_only "$@" ;;
+    --ota) shift; ota "$@" ;;
+    -h|--help) sed -n '2,6p' "$0" ;;
+    "") usb ;;
+    *) die "Unknown option $1 (see --help)" ;;
+  esac
 }
 
 main "$@"

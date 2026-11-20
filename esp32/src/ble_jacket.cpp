@@ -3,6 +3,7 @@
 #include <Arduino.h>
 #include <NimBLEDevice.h>
 
+#include "app_state.h"
 #include "config.h"
 
 namespace {
@@ -13,8 +14,9 @@ NimBLEClient* client = nullptr;
 NimBLERemoteCharacteristic* writeChar = nullptr;
 
 bool findJacket(NimBLEAddress& out) {
-    if (strlen(JACKET_ADDRESS) > 0) {
-        out = NimBLEAddress(std::string(JACKET_ADDRESS), BLE_ADDR_PUBLIC);
+    const jacket::Settings s = app_state::settings();
+    if (s.jacketAddress[0]) {
+        out = NimBLEAddress(std::string(s.jacketAddress), BLE_ADDR_PUBLIC);
         return true;
     }
     Serial.println("[ble] scanning for the jacket...");
@@ -46,7 +48,9 @@ void begin() {
 }
 
 bool ensureConnected() {
-    if (client->isConnected() && writeChar) return true;
+    const bool up = client->isConnected() && writeChar;
+    app_state::status().jacket = up;
+    if (up) return true;
     writeChar = nullptr;
     NimBLEAddress addr;
     if (!findJacket(addr)) return false;
@@ -61,7 +65,8 @@ bool ensureConnected() {
         client->disconnect();
         return false;
     }
-    Serial.println("[ble] connected to jacket");
+    Serial.printf("[ble] connected to jacket %s\n", addr.toString().c_str());
+    app_state::status().jacket = true;
     return true;
 }
 

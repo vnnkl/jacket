@@ -1,77 +1,81 @@
-// Wi-Fi -> payment websocket -> Bluetooth LE -> jacket off; a small/medium/big show per payment.
+// Wi-Fi -> payment websocket -> Bluetooth LE -> jacket: off between payments, a small/medium/big show
+// for each one. Settings come from the admin page (http://jacket.local or the Jacket-Setup hotspot).
 #include <Arduino.h>
-#include <WiFi.h>
 
+#include "app_state.h"
 #include "ble_jacket.h"
 #include "config.h"
 #include "jacket_core.h"
 #include "payment_socket.h"
+#include "settings_store.h"
+#include "web_admin.h"
+#include "wifi_setup.h"
 
 namespace {
-QueueHandle_t payments;
-jacket::ShowConfig showConfig;  // defaults; the admin page makes these editable
 jacket::Step showSteps[jacket::kMaxShowSteps];
 
-void queuePayment(int64_t sats) {
-    if (xQueueSend(payments, &sats, 0) != pdTRUE) Serial.println("[main] payment queue full; skipping one");
-}
-
-void playPayment(int64_t sats) {
-    const jacket::Show show = jacket::pickShow(sats, showConfig);
-    const size_t n = jacket::buildShow(show, showConfig, showSteps, jacket::kMaxShowSteps);
-    Serial.printf("[main] %s show for %lld sats\n", jacket::showName(show), static_cast<long long>(sats));
-    if (n == 0) return;
-    if (!ble_jacket::play(showSteps, n) || !ble_jacket::send(jacket::power(false))) {
-        Serial.println("[ble] lost the jacket mid-show; will reconnect");
+bool sendIdle(const jacket::Settings& s) {
+    switch (s.idleMode) {
+        case jacket::IdleMode::Color:
+            return ble_jacket::send(jacket::power(true)) && ble_jacket::send(jacket::color(s.idleHue));
+        case jacket::IdleMode::Preset: {
+            const uint8_t payload[] = {2, s.idlePreset, uint8_t(jacket::kMaxLevel >> 8), uint8_t(jacket::kMaxLevel)};
+            return ble_jacket::send(jacket::power(true)) && ble_jacket::send(jacket::frame(0x03, payload, sizeof payload));
+        }
+        default:
+            return ble_jacket::send(jacket::power(false));
     }
 }
 
-// Owns the Bluetooth link: jacket stays off; one show per queued payment, then off again.
+void playShow(int64_t sats, bool test) {
+    const jacket::Settings s = app_state::settings();
+    const jacket::Show show = jacket::pickShow(sats, s.shows);
+    if (!test) app_state::logPayment(sats, show);
+    Serial.printf("[main] %s%s show for %lld sats\n", test ? "test " : "", jacket::showName(show),
+                  static_cast<long long>(sats));
+    const size_t n = jacket::buildShow(show, s.shows, showSteps, jacket::kMaxShowSteps);
+    if (n && !(ble_jacket::play(showSteps, n) && sendIdle(s))) Serial.println("[ble] lost the jacket mid-show");
+}
+
+// Owns the Bluetooth link: one show per queued payment, then back to the idle look.
 void jacketTask(void*) {
     ble_jacket::begin();
-    bool wasConnected = false;
+    bool idleSent = false;
     for (;;) {
         if (!ble_jacket::ensureConnected()) {
-            wasConnected = false;
+            idleSent = false;
             delay(kBleRetryMs);
             continue;
         }
-        if (!wasConnected) wasConnected = ble_jacket::send(jacket::power(false));
+        if (!idleSent) idleSent = sendIdle(app_state::settings());
         int64_t sats;
-        if (xQueueReceive(payments, &sats, pdMS_TO_TICKS(1000)) == pdTRUE) playPayment(sats);
+        bool test;
+        if (app_state::nextShow(sats, test, 1000)) playShow(sats, test);
     }
 }
 
-void connectWifi() {
-    if (WiFi.status() == WL_CONNECTED) return;
-    Serial.printf("[wifi] connecting to %s", WIFI_SSID);
-    WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
-    const uint32_t start = millis();
-    while (WiFi.status() != WL_CONNECTED && millis() - start < kWifiRetryMs) {
-        delay(250);
-        Serial.print('.');
-    }
-    Serial.println(WiFi.status() == WL_CONNECTED ? " connected" : " failed, retrying");
+void onPayment(int64_t sats) {
+    if (!app_state::queueShow(sats, false)) Serial.println("[main] show queue full; skipping a payment");
 }
 }  // namespace
 
 void setup() {
     Serial.begin(115200);
-    delay(500);
-    Serial.println("\n[main] jacket payment light starting");
-    payments = xQueueCreate(kPaymentQueue, sizeof(int64_t));
+    delay(300);
+    Serial.printf("\n[main] jacket payment light %s starting\n", FIRMWARE_VERSION);
+    app_state::begin();
+    app_state::setSettings(settings_store::load());
     xTaskCreate(jacketTask, "jacket", 8192, nullptr, 1, nullptr);
-
-    WiFi.mode(WIFI_STA);
-    WiFi.setAutoReconnect(true);
-    connectWifi();
-    if (!payment_socket::begin(PAYMENT_WS_URL, queuePayment)) {
-        Serial.println("[main] PAYMENT_WS_URL is not a ws:// or wss:// URL - fix secrets.h and reflash");
-    }
+    wifi_setup::begin();
+    web_admin::begin();
+    const jacket::Settings s = app_state::settings();
+    if (s.wsUrl[0] && !payment_socket::begin(s.wsUrl, onPayment))
+        Serial.println("[main] saved websocket URL is invalid; fix it on the admin page");
 }
 
 void loop() {
-    connectWifi();
+    wifi_setup::loop();
+    web_admin::loop();
     payment_socket::loop();
-    delay(5);
+    delay(2);
 }

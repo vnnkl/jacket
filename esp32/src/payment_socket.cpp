@@ -3,6 +3,7 @@
 #include <Arduino.h>
 #include <WebSocketsClient.h>
 
+#include "app_state.h"
 #include "config.h"
 #include "jacket_core.h"
 #include "root_ca.h"
@@ -15,10 +16,12 @@ jacket::WsUrl url;
 void onEvent(WStype_t type, uint8_t* payload, size_t length) {
     switch (type) {
         case WStype_CONNECTED:
+            app_state::status().websocket = true;
             Serial.println("[ws] listening for payments");
             break;
         case WStype_DISCONNECTED:
-            Serial.println("[ws] disconnected, will reconnect");
+            if (app_state::status().websocket) Serial.println("[ws] disconnected, will reconnect");
+            app_state::status().websocket = false;
             break;
         case WStype_TEXT: {
             const int64_t sats = jacket::incomingSats(reinterpret_cast<const char*>(payload), length);

@@ -7,3 +7,4 @@ __pycache__/
 .omx/
 esp32/.pio/
 esp32/include/secrets.h
+firmware.bin
