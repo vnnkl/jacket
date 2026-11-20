@@ -67,11 +67,11 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("number", type=int)
     d = sub.add_parser("disco", help="disco rainbow once")
     d.add_argument("--seconds", type=float, default=3.0)
-    d.add_argument("--idle", type=parse_idle, default="white", help="afterwards: off, colour, or preset:N")
+    d.add_argument("--idle", type=parse_idle, default="off", help="afterwards: off, colour, or preset:N")
     li = sub.add_parser("listen", help="disco rainbow on every incoming payment")
     li.add_argument("url", nargs="?", help=f"payment websocket (or ${WS_ENV})")
     li.add_argument("--seconds", type=float, default=3.0)
-    li.add_argument("--idle", type=parse_idle, default="white", help="between payments: off, colour, or preset:N")
+    li.add_argument("--idle", type=parse_idle, default="off", help="between payments: off, colour, or preset:N")
     return ap
 
 

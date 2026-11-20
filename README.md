@@ -16,3 +16,19 @@ uv run jacket listen wss://…/api/v1/ws/<id> [--seconds 3] [--idle white|off|<c
 `JACKET_ADDRESS` skips the Bluetooth scan; `JACKET_PAYMENT_WS` sets the websocket URL.
 `listen` reacts to LNbits wallet updates with a positive `payment.amount` (and to the text `jacket-test`),
 queues bursts, and reconnects to both the websocket and the jacket on its own.
+
+## ESP32 (runs without the Mac)
+
+Supported boards: ESP32, ESP32-S3, ESP32-C3 (the ESP32-S2 has no Bluetooth). Wi-Fi must be 2.4 GHz.
+
+```bash
+./flash.sh    # plug the board in first; asks for Wi-Fi name, password and the websocket URL
+```
+
+The script detects the board, writes `esp32/include/secrets.h` (git-ignored), builds with PlatformIO
+(via `uvx`, nothing to install but `uv`) and uploads. On boot the ESP32 joins Wi-Fi, keeps the payment
+websocket open (TLS, Let's Encrypt roots pinned), connects to the jacket over Bluetooth, keeps it off,
+and plays a 3 s disco rainbow for every incoming payment. Everything reconnects on its own.
+
+Stop the Mac listener first (`tmux kill-session -t jacket`): the jacket accepts one Bluetooth connection.
+Logic tests: `cd esp32 && uvx --from platformio pio test -e native`.
