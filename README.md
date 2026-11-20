@@ -112,3 +112,15 @@ Tests: `cd esp32 && uvx --from platformio pio test -e native` (shows byte for by
 settings validation). After changing `src/jacket/shows.py`, run `uv run python tools/gen_golden.py`.
 Try the admin page without a board: `uv run python tools/mock_admin.py [--fresh]` → http://127.0.0.1:8765
 (password `testpass1`).
+
+## Presentation
+
+A short non-technical deck about the project: [docs/slides/jacket.pdf](docs/slides/jacket.pdf)
+(source `docs/slides/jacket.md`, made with [Marp](https://marp.app); text-only outline in
+`docs/presentation.md`). Rebuild:
+
+```bash
+cd docs/slides
+npx @marp-team/marp-cli --no-stdin --html --allow-local-files jacket.md --pdf -o jacket.pdf
+npx @marp-team/marp-cli --no-stdin --html jacket.md -o jacket.html   # opens in any browser, press F for full screen
+```
