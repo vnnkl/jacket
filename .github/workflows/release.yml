@@ -22,6 +22,7 @@ jobs:
     needs: test
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         env: [esp32, esp32s3, esp32c3]
     steps:

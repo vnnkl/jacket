@@ -7,7 +7,7 @@
 #   ./flash.sh --ota [host] [board] upload the release firmware over Wi-Fi (default: jacket.local esp32)
 #   ./flash.sh --from-source        developers: build with PlatformIO, then flash with esptool
 #
-# Options (env vars): ESP_PORT=/dev/ttyUSB0  JACKET_VERSION=v0.3.0 (default: latest)
+# Options (env vars): ESP_PORT=/dev/ttyUSB0  JACKET_VERSION=v0.3.1 (default: latest)
 #                     JACKET_ADMIN_PASSWORD=... (for --ota without a prompt)
 # NixOS: run `nix-shell` in this folder first (provides esptool, curl, picocom).
 set -euo pipefail
