@@ -20,12 +20,14 @@ void onEvent(WStype_t type, uint8_t* payload, size_t length) {
         case WStype_DISCONNECTED:
             Serial.println("[ws] disconnected, will reconnect");
             break;
-        case WStype_TEXT:
-            if (jacket::isIncomingPayment(reinterpret_cast<const char*>(payload), length)) {
-                Serial.println("[ws] payment received");
-                callback();
+        case WStype_TEXT: {
+            const int64_t sats = jacket::incomingSats(reinterpret_cast<const char*>(payload), length);
+            if (sats > 0) {
+                Serial.printf("[ws] payment received: %lld sats\n", static_cast<long long>(sats));
+                callback(sats);
             }
             break;
+        }
         case WStype_ERROR:
             Serial.println("[ws] error");
             break;

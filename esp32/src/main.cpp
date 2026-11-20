@@ -1,4 +1,4 @@
-// Wi-Fi -> payment websocket -> Bluetooth LE -> jacket off, 3 s disco rainbow for every payment.
+// Wi-Fi -> payment websocket -> Bluetooth LE -> jacket off; a small/medium/big show per payment.
 #include <Arduino.h>
 #include <WiFi.h>
 
@@ -9,15 +9,24 @@
 
 namespace {
 QueueHandle_t payments;
-jacket::Step disco[jacket::kMaxDiscoSteps];
-size_t discoSteps = 0;
+jacket::ShowConfig showConfig;  // defaults; the admin page makes these editable
+jacket::Step showSteps[jacket::kMaxShowSteps];
 
-void queuePayment() {
-    uint8_t token = 1;
-    if (xQueueSend(payments, &token, 0) != pdTRUE) Serial.println("[main] payment queue full; skipping one");
+void queuePayment(int64_t sats) {
+    if (xQueueSend(payments, &sats, 0) != pdTRUE) Serial.println("[main] payment queue full; skipping one");
 }
 
-// Owns the Bluetooth link: jacket stays off; one disco per queued payment, then off again.
+void playPayment(int64_t sats) {
+    const jacket::Show show = jacket::pickShow(sats, showConfig);
+    const size_t n = jacket::buildShow(show, showConfig, showSteps, jacket::kMaxShowSteps);
+    Serial.printf("[main] %s show for %lld sats\n", jacket::showName(show), static_cast<long long>(sats));
+    if (n == 0) return;
+    if (!ble_jacket::play(showSteps, n) || !ble_jacket::send(jacket::power(false))) {
+        Serial.println("[ble] lost the jacket mid-show; will reconnect");
+    }
+}
+
+// Owns the Bluetooth link: jacket stays off; one show per queued payment, then off again.
 void jacketTask(void*) {
     ble_jacket::begin();
     bool wasConnected = false;
@@ -28,11 +37,8 @@ void jacketTask(void*) {
             continue;
         }
         if (!wasConnected) wasConnected = ble_jacket::send(jacket::power(false));
-        uint8_t token;
-        if (xQueueReceive(payments, &token, pdMS_TO_TICKS(1000)) != pdTRUE) continue;
-        if (!ble_jacket::play(disco, discoSteps) || !ble_jacket::send(jacket::power(false))) {
-            Serial.println("[ble] lost the jacket mid-effect; will reconnect");
-        }
+        int64_t sats;
+        if (xQueueReceive(payments, &sats, pdMS_TO_TICKS(1000)) == pdTRUE) playPayment(sats);
     }
 }
 
@@ -53,8 +59,7 @@ void setup() {
     Serial.begin(115200);
     delay(500);
     Serial.println("\n[main] jacket payment light starting");
-    discoSteps = jacket::discoRainbow(kDiscoMs, disco, jacket::kMaxDiscoSteps);
-    payments = xQueueCreate(kPaymentQueue, sizeof(uint8_t));
+    payments = xQueueCreate(kPaymentQueue, sizeof(int64_t));
     xTaskCreate(jacketTask, "jacket", 8192, nullptr, 1, nullptr);
 
     WiFi.mode(WIFI_STA);

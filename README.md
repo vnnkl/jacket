@@ -42,7 +42,8 @@ Supported boards: ESP32, ESP32-S3, ESP32-C3 (the ESP32-S2 has no Bluetooth). Wi-
 The script detects the board, writes `esp32/include/secrets.h` (git-ignored), builds with PlatformIO
 (via `uvx`, nothing to install but `uv`) and uploads. On boot the ESP32 joins Wi-Fi, keeps the payment
 websocket open (TLS, Let's Encrypt roots pinned), connects to the jacket over Bluetooth, keeps it off,
-and plays a 3 s disco rainbow for every incoming payment. Everything reconnects on its own.
+and plays the small, medium or big show for every incoming payment. Everything reconnects on its own.
 
 Stop the Mac listener first (`tmux kill-session -t jacket`): the jacket accepts one Bluetooth connection.
-Logic tests: `cd esp32 && uvx --from platformio pio test -e native`.
+Logic tests: `cd esp32 && uvx --from platformio pio test -e native`. They check the firmware shows byte for byte
+against the Mac ones; after changing `src/jacket/shows.py`, run `uv run python tools/gen_golden.py`.

@@ -5,7 +5,6 @@
 #error "Missing include/secrets.h - run ./flash.sh (or copy include/secrets.example.h to include/secrets.h)"
 #endif
 
-constexpr uint32_t kDiscoMs = 3000;          // disco rainbow length per payment
 constexpr uint8_t kPaymentQueue = 20;        // bursts beyond this are dropped
 constexpr uint32_t kWifiRetryMs = 10000;
 constexpr uint32_t kWsReconnectMs = 5000;

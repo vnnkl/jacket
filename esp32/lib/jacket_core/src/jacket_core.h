@@ -28,8 +28,32 @@ Packet white();
 constexpr size_t kMaxDiscoSteps = 128;
 size_t discoRainbow(uint32_t durationMs, Step* out, size_t capacity);
 
-// LNbits wallet update with a positive, non-failed payment.amount, or the text "jacket-test".
-bool isIncomingPayment(const char* message, size_t len);
+// Incoming amount in sats (rounded up) from an LNbits wallet update, or 0 if the message is not an
+// incoming settled payment. Test triggers: "jacket-test", "jacket-test:small|medium|big|<sats>".
+int64_t incomingSats(const char* message, size_t len);
+
+// ---- payment shows (must match the Mac implementation byte for byte; see tools/gen_golden.py) ----
+constexpr size_t kMaxShowSteps = 192;
+constexpr uint32_t kMaxShowMs = 60000;
+
+enum class Show { None, Small, Medium, Big };
+
+struct ShowConfig {
+    uint32_t minSats = 0;
+    uint32_t mediumFrom = 1000;
+    uint32_t bigFrom = 10000;
+    uint16_t smallHue = 60;  // yellow
+    uint32_t smallMs = 2000;
+    uint32_t mediumMs = 3000;
+    uint32_t bigMs = 10000;
+    bool valid() const;
+};
+
+Show pickShow(int64_t sats, const ShowConfig& cfg);
+size_t buildShow(Show show, const ShowConfig& cfg, Step* out, size_t capacity);
+size_t smallPulse(uint16_t hue, uint32_t durationMs, Step* out, size_t capacity);
+size_t bigShow(uint32_t durationMs, Step* out, size_t capacity);
+const char* showName(Show show);
 
 struct WsUrl {
     bool secure;
