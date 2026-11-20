@@ -11,19 +11,26 @@ Bluetooth device named `Hello Fairy-XXXX`, it very probably works.
 
 ## Products found that use the Hello Fairy app
 
-Research from November 2026. Several retailers block automated reading, so some entries come from
-search-result snippets; "listing" means the product page itself names the app.
+Checked November 2026. "Page names it" means the product page itself says Hello Fairy; "search
+snippet" means the shop blocked automated reading and only a search result mentioned the app.
 
 | Product | Type | Evidence |
 |---|---|---|
-| [Avatar Controls Bluetooth lights](https://www.avatarcontrols.com/pages/fairy-lights-app-download) (curtain, icicle, waterfall, cone tree, palm tree, snowflake, pathway) | Decorative | Brand page names Hello Fairy |
-| [Avatar Controls smart curtain, 400 LEDs](https://www.avatarcontrols.com/products/smart-curtain-lights-string-with-400-rgb-leds-diy-your-effects) | Curtain | Manual names "Hello Fairy-xxx" devices |
-| [Avatar Controls smart C9 string lights, 200 count (Lowe's)](https://www.lowes.com/pd/Avatar-Controls-Smart-C9-String-Lights-200-Count-132-ft-Multi-function-Multicolor-LED-Plug-In-Christmas-String-Lights-Timer/5016923097) | String lights | Listing names the app |
-| [RGB Christmas net lights, 10x10 ft (Amazon)](https://us.amazon.com/Christmas-Control-Outdoor-control-outdoor/dp/B0H4LZV592) | Net lights | Listing title names the app |
-| [Ivy Bronx mini RGB cluster lights, 10 m (Wayfair)](https://www.wayfair.ie/home/pdp/ivy-bronx-mini-rgb-led-cluster-lights-10m-i110744077.html) | String lights | Listing names the app |
-| [C9 RGBW string lights, 2 x 33 ft (Amazon)](https://www.amazon.com/Christmas-String-Outdoor-Control-Controller/dp/B0GZDVQ54J) | String lights | Search snippet |
-| [ICLOVER 400-LED curtain (Walmart)](https://www.walmart.com/ip/12150965130) | Curtain | Search snippet |
-| [RGB curtain, 400 LEDs, 2 x 2 m (Newegg)](https://www.newegg.com/p/0VV-025F-00001) | Curtain | Search snippet |
+| [C9 RGBW string lights, 2 x 33 ft (Amazon)](https://www.amazon.com/Christmas-String-Outdoor-Control-Controller/dp/B0GZDVQ54J) | String lights | Page names it ("Use the Hello Fairy App to explore 125 built-in lighting modes") |
+| [RGB Christmas net lights, 10x10 ft (Amazon)](https://us.amazon.com/Christmas-Control-Outdoor-control-outdoor/dp/B0H4LZV592) | Net lights | Page names it ("Hello Fairy App Control") |
+| [13 ft smart outdoor tree lights with star (Amazon)](https://www.amazon.com/dp/B0GY49861G) | Christmas tree | Page names it |
+| [26.5 ft smart waterfall tree lights (Amazon)](https://www.amazon.com/dp/B0H8XVS3KS) | Christmas tree | Page names it; groups up to 8 Hello Fairy controllers |
+| [6 ft pre-lit pencil tree, RGB (Amazon)](https://www.amazon.com/dp/B0H2HRK39C) | Christmas tree | Page names it |
+| [HOLILLUMA 13 ft outdoor tree (Amazon)](https://www.amazon.com/dp/B0H2CTKLDN) | Christmas tree | Page names it |
+| [Ivy Bronx LED string lights, 10 m (Wayfair)](https://www.wayfair.ie/home/pdp/ivy-bronx-mini-rgb-led-cluster-lights-10m-i110744077.html) | String lights | Page names it |
+| [Avatar Controls smart C9 string lights, 200 count (Lowe's)](https://www.lowes.com/pd/Avatar-Controls-Smart-C9-String-Lights-200-Count-132-ft-Multi-function-Multicolor-LED-Plug-In-Christmas-String-Lights-Timer/5016923097) | String lights | Search snippet (shop blocks reading) |
+| [ICLOVER 400-LED curtain (Walmart)](https://www.walmart.com/ip/12150965130) | Curtain | Search snippet (shop blocks reading) |
+| [RGB curtain, 400 LEDs, 2 x 2 m (Newegg)](https://www.newegg.com/p/0VV-025F-00001) | Curtain | Search snippet (shop blocks reading) |
+| [Avatar Controls Bluetooth range](https://www.avatarcontrols.com/pages/fairy-lights-app-download) (icicle, waterfall, cone tree, palm tree, snowflake, pathway) | Decorative | Brand page names Hello Fairy, but see the warning below |
+
+**Same brand, different app:** Avatar Controls' own
+[400-LED smart curtain](https://www.avatarcontrols.com/products/smart-curtain-lights) names the
+"RGBHub" app (Bluetooth) and the "AvatarControls" app (Wi-Fi), not Hello Fairy. Check each product.
 
 Other projects have used: a 20x20 Hello Fairy curtain (model 25025,
 [hello_fairy_ble](https://github.com/nzrutman/hello_fairy_ble)) and a string light (model BSL84,
@@ -31,6 +38,11 @@ Other projects have used: a 20x20 Hello Fairy curtain (model 25025,
 [hellofairylighting.com](https://www.hellofairylighting.com/).
 
 We found **no other clothing or wearables** using this app; the raincoat seems to be unusual.
+
+**About the raincoat itself:** the Cyberdog product page doesn't name Hello Fairy; its "App Link"
+points to an app called *iDealLED*. Our raincoat's controller is a Hello Fairy one (it shows up as
+`Hello Fairy-XXXX` and works with the Hello Fairy app). Shops may ship different controllers in
+different batches, so check the Bluetooth name of yours before relying on this project.
 
 ## What carries over, and what doesn't
 
