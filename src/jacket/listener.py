@@ -5,33 +5,34 @@ from collections.abc import Awaitable, Callable
 
 import websockets
 
-from .payments import is_incoming_payment
+from .payments import incoming_sats
 
 log = logging.getLogger(__name__)
 MAX_BACKOFF = 30.0
 RECONNECT_DELAY = 1.0
 QUEUE_LIMIT = 20  # a burst of payments shouldn't keep the jacket busy for minutes
 
-OnPayment = Callable[[], Awaitable[None]]
+OnPayment = Callable[[int], Awaitable[None]]  # receives the amount in sats
 
 
 async def consume(messages, queue: asyncio.Queue) -> None:
     async for message in messages:
-        if not is_incoming_payment(message):
+        sats = incoming_sats(message)
+        if sats is None:
             log.debug("ignored message: %.200s", message)
             continue
         if queue.full():
             log.warning("too many payments queued; skipping one")
             continue
-        log.info("payment received")
-        queue.put_nowait(message)
+        log.info("payment received: %d sats", sats)
+        queue.put_nowait(sats)
 
 
 async def run_effects(queue: asyncio.Queue, on_payment: OnPayment) -> None:
     while True:
-        await queue.get()
+        sats = await queue.get()
         try:
-            await on_payment()
+            await on_payment(sats)
         except Exception as exc:  # keep listening even if the jacket is temporarily unreachable
             log.error("could not play effect: %s", exc)
         finally:

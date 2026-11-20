@@ -11,7 +11,7 @@ OUT = json.dumps({"payment": {"amount": -1000, "status": "success"}})
 async def test_consume_queues_only_incoming_payments():
     q = asyncio.Queue()
     await consume(agen([PAY, OUT, "noise", PAY]), q)
-    assert q.qsize() == 2
+    assert [q.get_nowait(), q.get_nowait()] == [1, 1]
 
 async def test_consume_drops_when_queue_full():
     q = asyncio.Queue(maxsize=1)
@@ -20,15 +20,15 @@ async def test_consume_drops_when_queue_full():
 
 async def test_run_effects_survives_failures():
     q, calls = asyncio.Queue(), []
-    async def effect():
-        calls.append(1)
+    async def effect(sats):
+        calls.append(sats)
         if len(calls) == 1:
             raise RuntimeError("jacket gone")
     task = asyncio.create_task(run_effects(q, effect))
-    q.put_nowait(PAY); q.put_nowait(PAY)
+    q.put_nowait(1); q.put_nowait(1)
     await asyncio.wait_for(q.join(), 1)
     task.cancel()
-    assert len(calls) == 2
+    assert calls == [1, 1]
 
 class FakeWS:
     def __init__(self, msgs): self.msgs = msgs
@@ -43,8 +43,8 @@ async def test_listen_plays_effect_per_payment_and_reconnects():
         if len(connects) == 1:
             raise OSError("network down")
         return FakeWS([PAY, PAY])
-    async def effect():
-        count.append(1)
+    async def effect(sats):
+        count.append(sats)
         if len(count) >= 2:
             played.set()
     task = asyncio.create_task(listen("wss://x", effect, connect=connect))

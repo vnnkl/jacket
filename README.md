@@ -10,11 +10,25 @@ uv run jacket on | off
 uv run jacket color red          # white, red, orange, yellow, green, cyan, blue, purple, pink, or hue 0-359
 uv run jacket preset 7           # built-in effects 0-20
 uv run jacket disco              # 3 s disco rainbow
-uv run jacket listen wss://…/api/v1/ws/<id> [--seconds 3] [--idle white|off|<colour>|preset:N]
+uv run jacket show small|medium|big|<sats>
+uv run jacket listen wss://…/api/v1/ws/<id>
 ```
 
+Shows by payment size (all adjustable with `--min-sats --medium-from --big-from --small-color
+--small-seconds --medium-seconds --big-seconds --idle`):
+
+| Payment | Show |
+|---|---|
+| below `--min-sats` (0) | nothing |
+| below 1,000 sats | 2 s pulse in one colour (yellow) |
+| 1,000–9,999 sats | 3 s disco rainbow |
+| 10,000+ sats | 10 s: accelerating rainbow sweep, accelerating disco strobe, white flashes and fade |
+
+The jacket stays off between shows (`--idle`). Test through the websocket with the text
+`jacket-test:small`, `jacket-test:medium`, `jacket-test:big` or `jacket-test:<sats>`.
+
 `JACKET_ADDRESS` skips the Bluetooth scan; `JACKET_PAYMENT_WS` sets the websocket URL.
-`listen` reacts to LNbits wallet updates with a positive `payment.amount` (and to the text `jacket-test`),
+`listen` reacts to LNbits wallet updates with a positive `payment.amount` (msat),
 queues bursts, and reconnects to both the websocket and the jacket on its own.
 
 ## ESP32 (runs without the Mac)

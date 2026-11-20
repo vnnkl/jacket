@@ -1,4 +1,4 @@
-"""Command line: `jacket on|off|color|disco|preset|listen`."""
+"""Command line: `jacket on|off|color|preset|disco|show|listen`."""
 import argparse
 import asyncio
 import logging
@@ -9,6 +9,7 @@ from urllib.parse import urlparse
 from .device import Jacket, JacketError
 from .effects import disco_rainbow
 from .listener import listen
+from .shows import ShowConfig, pick_show
 from .protocol import MAX_LEVEL, color, power, scene
 
 NAMED_HUES = {"red": 0, "orange": 30, "yellow": 60, "green": 120, "cyan": 180,
@@ -30,6 +31,16 @@ def parse_color(value: str) -> bytes:
         raise argparse.ArgumentTypeError(
             f"unknown colour {value!r}: use white, {', '.join(NAMED_HUES)}, or a hue 0-359"
         ) from None
+
+
+def parse_hue(value: str) -> int:
+    """Colour name or hue in degrees -> hue."""
+    name = value.strip().lower()
+    if name in NAMED_HUES:
+        return NAMED_HUES[name]
+    if name.isdigit() and int(name) < 360:
+        return int(name)
+    raise argparse.ArgumentTypeError(f"unknown colour {value!r}: use {', '.join(NAMED_HUES)}, or a hue 0-359")
 
 
 def parse_idle(value: str) -> tuple[bytes, ...]:
@@ -68,11 +79,53 @@ def build_parser() -> argparse.ArgumentParser:
     d = sub.add_parser("disco", help="disco rainbow once")
     d.add_argument("--seconds", type=float, default=3.0)
     d.add_argument("--idle", type=parse_idle, default="off", help="afterwards: off, colour, or preset:N")
-    li = sub.add_parser("listen", help="disco rainbow on every incoming payment")
+    sh = sub.add_parser("show", help="play the show for a payment size once")
+    sh.add_argument("size", help="small, medium, big, or an amount in sats")
+    add_show_options(sh)
+    li = sub.add_parser("listen", help="play a show for every incoming payment")
     li.add_argument("url", nargs="?", help=f"payment websocket (or ${WS_ENV})")
-    li.add_argument("--seconds", type=float, default=3.0)
-    li.add_argument("--idle", type=parse_idle, default="off", help="between payments: off, colour, or preset:N")
+    add_show_options(li)
     return ap
+
+
+def add_show_options(p: argparse.ArgumentParser) -> None:
+    d = ShowConfig()
+    p.add_argument("--min-sats", type=int, default=d.min_sats, help="ignore smaller payments")
+    p.add_argument("--medium-from", type=int, default=d.medium_from, help="sats where the disco starts")
+    p.add_argument("--big-from", type=int, default=d.big_from, help="sats where the big show starts")
+    p.add_argument("--small-color", type=parse_hue, default=d.small_hue, help="small-show colour")
+    p.add_argument("--small-seconds", type=float, default=d.small_seconds)
+    p.add_argument("--medium-seconds", type=float, default=d.medium_seconds)
+    p.add_argument("--big-seconds", type=float, default=d.big_seconds)
+    p.add_argument("--idle", type=parse_idle, default="off", help="between shows: off, colour, or preset:N")
+
+
+def show_config(args: argparse.Namespace) -> ShowConfig:
+    try:
+        return ShowConfig(args.min_sats, args.medium_from, args.big_from, args.small_color,
+                          args.small_seconds, args.medium_seconds, args.big_seconds)
+    except ValueError as exc:
+        raise SystemExit(f"Bad show settings: {exc}") from None
+
+
+def size_to_sats(size: str, cfg: ShowConfig) -> int:
+    bands = {"small": max(cfg.min_sats, 1), "medium": cfg.medium_from, "big": cfg.big_from}
+    if size in bands:
+        return bands[size]
+    if size.isdigit():
+        return int(size)
+    raise SystemExit(f"Size must be small, medium, big or a number of sats, not {size!r}")
+
+
+async def play_payment(jacket: Jacket, sats: int, cfg: ShowConfig, idle: tuple[bytes, ...]) -> None:
+    picked = pick_show(sats, cfg)
+    if picked is None:
+        logging.info("%d sats is below the minimum; no show", sats)
+        return
+    name, steps = picked
+    logging.info("%s show for %d sats", name, sats)
+    await jacket.play(steps)
+    await jacket.send(*idle)
 
 
 async def run(args: argparse.Namespace) -> None:
@@ -89,13 +142,15 @@ async def run(args: argparse.Namespace) -> None:
         elif args.cmd == "disco":
             await jacket.play(disco_rainbow(args.seconds))
             await jacket.send(*args.idle)
+        elif args.cmd == "show":
+            cfg = show_config(args)
+            await play_payment(jacket, size_to_sats(args.size, cfg), cfg, args.idle)
         elif args.cmd == "listen":
-            url = ws_url(args.url)
+            url, cfg = ws_url(args.url), show_config(args)
             await jacket.send(*args.idle)
 
-            async def on_payment() -> None:
-                await jacket.play(disco_rainbow(args.seconds))
-                await jacket.send(*args.idle)
+            async def on_payment(sats: int) -> None:
+                await play_payment(jacket, sats, cfg, args.idle)
 
             await listen(url, on_payment)
     finally:
