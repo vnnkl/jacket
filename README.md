@@ -4,28 +4,45 @@ An LED jacket (Hello Fairy Bluetooth controller) that plays a light show for eve
 
 ## Quick start: flash an ESP32
 
-You need a Mac or Linux computer, an ESP32, ESP32-S3 or ESP32-C3 board (not S2), and a USB data cable.
+You need a Linux (incl. NixOS) or Mac computer, an ESP32, ESP32-S3 or ESP32-C3 board (not S2), and a
+USB data cable. Flashing uses plain **esptool** with the firmware from the latest GitHub release;
+no PlatformIO or compiler needed.
 
 ```bash
-# 1. Install uv (the only tool needed; PlatformIO and esptool are fetched automatically)
-brew install uv                                     # macOS
-# curl -LsSf https://astral.sh/uv/install.sh | sh   # Linux
-
-# 2. Get the code
 git clone https://github.com/vnnkl/jacket
 cd jacket
 
-# 3. Plug in the board and flash (first run downloads the toolchain, ~10 min)
-./flash.sh
+# NixOS / Nix: get esptool, curl and picocom
+nix-shell
+# other Linux / macOS: pipx install esptool   (or: brew install esptool)
+
+# plug in the board, then:
+./flash.sh            # detects ESP32 / S3 / C3, downloads the matching firmware, checks it, flashes
+./flash.sh --monitor  # serial log (optional)
 ```
 
-4. On your phone, join the Wi-Fi **Jacket-Setup** (password `jacketsetup`). The setup page opens
+On Linux your user needs serial access: NixOS `users.users.<you>.extraGroups = [ "dialout" ];`,
+other distros `sudo usermod -aG dialout $USER` (log out and in again).
+
+Then:
+1. On your phone, join the Wi-Fi **Jacket-Setup** (password `jacketsetup`). The setup page opens
    by itself (otherwise go to http://192.168.4.1).
-5. Set an admin password, your Wi-Fi (2.4 GHz) and the payment websocket URL, then save.
-6. Rejoin your normal Wi-Fi and open **http://jacket.local** for the admin page and test buttons.
+2. Set an admin password, your Wi-Fi (2.4 GHz) and the payment websocket URL, then save.
+3. Rejoin your normal Wi-Fi and open **http://jacket.local** for the admin page and test buttons.
 
 Close the Hello Fairy app on all phones: the jacket accepts only one Bluetooth connection.
 If the board isn't found, try another USB cable or hold BOOT while plugging it in.
+
+Flashing by hand (what `flash.sh` does; files from the release, `<b>` = esp32, esp32s3 or esp32c3,
+bootloader offset `0x1000` on esp32 and `0x0` on S3/C3):
+
+```bash
+esptool --chip <b> --port /dev/ttyUSB0 write_flash \
+  0x1000 <b>-bootloader.bin 0x8000 <b>-partitions.bin 0xe000 <b>-boot_app0.bin 0x10000 <b>-firmware.bin
+```
+
+Only these areas are written, so saved settings survive. Updates later: upload `<b>-firmware.bin`
+on the admin page, or `./flash.sh --ota jacket.local <b>`.
 
 ## Mac command line (optional)
 
@@ -65,10 +82,13 @@ queues bursts, and reconnects to both the websocket and the jacket on its own.
 Supported boards: ESP32, ESP32-S3, ESP32-C3 (the ESP32-S2 has no Bluetooth). Wi-Fi must be 2.4 GHz.
 
 ```bash
-./flash.sh                         # USB: detects the board, builds, flashes (nothing to type)
-./flash.sh --build-only            # firmware.bin to upload on the admin page
-./flash.sh --ota [jacket.local]    # build and upload over Wi-Fi (asks for the admin password)
+./flash.sh                         # USB: release firmware via esptool
+./flash.sh --ota [host] [board]    # upload release firmware over Wi-Fi (asks for the admin password)
+./flash.sh --from-source           # developers: build with PlatformIO, flash with esptool
 ```
+
+Releases: pushing a tag `v*` makes GitHub Actions run the tests, build all three boards and publish
+the files with `SHA256SUMS` (`.github/workflows/release.yml`).
 
 **First setup:** join the Wi-Fi `Jacket-Setup` (default password `jacketsetup`) with a phone; the setup
 page opens (or go to http://192.168.4.1). Set the admin password, Wi-Fi and payment websocket URL.
