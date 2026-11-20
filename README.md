@@ -1,5 +1,31 @@
 # jacket
 
+## Quick start: flash an ESP32
+
+You need a Mac or Linux computer, an ESP32, ESP32-S3 or ESP32-C3 board (not S2), and a USB data cable.
+
+```bash
+# 1. Install uv (the only tool needed; PlatformIO and esptool are fetched automatically)
+brew install uv                                     # macOS
+# curl -LsSf https://astral.sh/uv/install.sh | sh   # Linux
+
+# 2. Get the code
+git clone https://github.com/vnnkl/jacket
+cd jacket
+
+# 3. Plug in the board and flash (first run downloads the toolchain, ~10 min)
+./flash.sh
+```
+
+4. On your phone, join the Wi-Fi **Jacket-Setup** (password `jacketsetup`). The setup page opens
+   by itself (otherwise go to http://192.168.4.1).
+5. Set an admin password, your Wi-Fi (2.4 GHz) and the payment websocket URL, then save.
+6. Rejoin your normal Wi-Fi and open **http://jacket.local** for the admin page and test buttons.
+
+Close the Hello Fairy app on all phones: the jacket accepts only one Bluetooth connection.
+If the board isn't found, try another USB cable or hold BOOT while plugging it in.
+
+
 Control the Hello Fairy LED jacket (controller `RSL100`, firmware 1.1.0) over Bluetooth from a Mac,
 and make it play a disco rainbow every time a payment arrives.
 
