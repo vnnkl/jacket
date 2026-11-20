@@ -84,7 +84,7 @@ strong { color: var(--yellow); font-weight: 600; }
 em { color: var(--dusk); font-style: normal; }
 
 .lede { font-size: 36px; line-height: 1.35; max-width: 24em; color: var(--chalk); }
-.quiet { color: var(--dusk); font-size: 26px; margin-top: 28px; }
+.quiet { color: var(--dusk); font-size: 26px; margin-top: 28px; max-width: 46em; }
 
 /* The flow on slide 6: payment -> listener -> jacket */
 .flow { display: flex; align-items: center; gap: 22px; margin: 40px 0 36px; font-size: 30px; }
@@ -207,12 +207,12 @@ This was the moment it all came together: a payment from a phone, and the jacket
 |---|---|---|
 | <span class="bulbs" style="color:#FFC93C"><i></i><i></i><i></i></span> | **Under 1,000 sats** | A soft yellow glow, 2 seconds |
 | <span class="bulbs"><i style="color:#FFC93C"></i><i style="color:#FF5FA2"></i><i style="color:#3DD6B0"></i></span> | **1,000 – 9,999 sats** | A disco rainbow, 3 seconds |
-| <span class="bulbs"><i style="color:#FFFFFF"></i><i style="color:#9B8CFF"></i><i style="color:#FFFFFF"></i></span> | **10,000 sats and up** | Rainbow, strobe and white flashes, 10 seconds |
+| <span class="bulbs"><i style="color:#FFFFFF"></i><i style="color:#9B8CFF"></i><i style="color:#FFFFFF"></i></span> | **10,000 sats and up** | The full light show, 10 seconds |
 
-<p class="quiet">Between payments the jacket stays dark, so every payment stands out.<br>All of this can be changed from the phone, for example a disco for every payment.</p>
+<p class="quiet">The jacket stays dark in between. All of this can be changed from a phone.</p>
 
 <!--
-Bigger payments should feel special. The big show builds up like fireworks.
+Bigger payments should feel special. The big show builds up like fireworks: rainbow, then strobe, then white flashes. Right now we've set it to a disco for every payment, chosen on the phone.
 -->
 
 ---
