@@ -4,7 +4,8 @@ An LED jacket (Hello Fairy Bluetooth controller) that plays a light show for eve
 
 **The jacket we used:** [Cyberdog light-up raincoat](https://www.cyberdog.net/products/light-up-raincoat).
 Its controller is controlled with the Hello Fairy app and shows up over Bluetooth as `Hello Fairy-XXXX`
-(model `RSL100`, firmware 1.1.0). Other lights that use the Hello Fairy app will probably work too.
+(model `RSL100`, firmware 1.1.0). Other lights that use the Hello Fairy app will probably work too:
+see [docs/compatible-lights.md](docs/compatible-lights.md).
 
 ## Quick start: flash an ESP32
 
