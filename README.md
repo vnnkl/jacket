@@ -2,6 +2,10 @@
 
 An LED jacket (Hello Fairy Bluetooth controller) that plays a light show for every Lightning payment.
 
+**The jacket we used:** [Cyberdog light-up raincoat](https://www.cyberdog.net/products/light-up-raincoat).
+Its controller is controlled with the Hello Fairy app and shows up over Bluetooth as `Hello Fairy-XXXX`
+(model `RSL100`, firmware 1.1.0). Other lights that use the Hello Fairy app will probably work too.
+
 ## Quick start: flash an ESP32
 
 You need a Linux (incl. NixOS) or Mac computer, an ESP32, ESP32-S3 or ESP32-C3 board (not S2), and a
